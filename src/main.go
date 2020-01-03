@@ -2,58 +2,27 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"os"
-	"os/signal"
-	"strings"
-	"syscall"
-
-	"github.com/bwmarrin/discordgo"
 )
 
+var srvLocation string = os.Getenv("srvLocation")
+var stat int = 0
+
+func handler(w http.ResponseWriter, r *http.Request) {
+	if r.RequestURI != "/favicon.ico" {
+		stat++
+	}
+	fmt.Println("[Handled] " + r.RequestURI)
+	fmt.Fprintf(w, "%d번째 방문자!", stat)
+}
+
 func main() {
-	dg, err := discordgo.New("Bot " + os.Getenv("goToken"))
-	if err != nil {
-		fmt.Println(err)
-		return
+	if len(srvLocation) < 1 {
+		srvLocation = ":8080"
 	}
 
-	dg.AddHandler(ready)
-	dg.AddHandler(messageCreate)
-
-	err = dg.Open()
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	sc := make(chan os.Signal, 1)
-	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
-	<-sc
-
-	// Cleanly close down the Discord session.
-	dg.Close()
-}
-
-func ready(s *discordgo.Session, event *discordgo.Ready) {
-	fmt.Println(event.User.Username, "is online!")
-	s.UpdateStatus(0, "Testing discordgo")
-}
-
-func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
-	ori := m.Content
-	if strings.HasPrefix(ori, "go>") {
-		ori = strings.Replace(ori, "go>", "", 1)
-		spOri := strings.Split(ori, " ")
-		cmd := spOri[0]
-
-		switch cmd {
-		case "ping":
-			s.ChannelMessageSend(m.ChannelID, "Pong!")
-			break
-
-		case "embed":
-			emb := discordgo.MessageEmbed{Title: "Hello, world!", Description: "This Is Example Message for Embed"}
-			s.ChannelMessageSendEmbed(m.ChannelID, &emb)
-			break
-		}
-	}
+	http.HandleFunc("/", handler)
+	fmt.Println("Server is now on " + srvLocation + "!")
+	http.ListenAndServe(srvLocation, nil)
 }
