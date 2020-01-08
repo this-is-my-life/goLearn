@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/asticode/go-astikit"
 	"github.com/asticode/go-astilectron"
 )
 
@@ -15,7 +16,7 @@ func main() {
 	err = app.Start()
 	erring(err)
 
-	w, err := app.NewWindow("src/index.html", &astilectron.WindowOptions{})
+	w, err := app.NewWindow("src/index.html", &astilectron.WindowOptions{Frame: astikit.BoolPtr(false)})
 	erring(err)
 
 	w.Create()
